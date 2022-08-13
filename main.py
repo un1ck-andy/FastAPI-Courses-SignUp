@@ -1,5 +1,3 @@
-from fastapi import Body
-from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import status
@@ -13,7 +11,6 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 
-from app.auth.auth_bearer import JWTBearer
 from app.auth.auth_handler import signJWT
 from app.jwt_auth import Auth
 from app.model import AuthModel
@@ -30,7 +27,7 @@ auth_handler = Auth()
 
 class Student(base):
     __tablename__ = "students"
-    user_id = Column(
+    student_id = Column(
         Integer,
         primary_key=True,
         nullable=False,
@@ -64,7 +61,7 @@ class CourseSignUp(base):
         unique=True,
         autoincrement=True,
     )
-    student_id = Column(Integer, ForeignKey("students.user_id"))
+    student_id = Column(Integer, ForeignKey("students.student_id"))
     course_id = Column(Integer, ForeignKey("courses.course_id"))
     student = relationship(
         "Student", backref="signup_student", lazy="subquery"
@@ -127,9 +124,10 @@ async def get_single_course(id: int):
 
 @app.post(
     "/api/v1/courses",
-    dependencies=[Depends(JWTBearer())],
+    # dependencies=[Depends(JWTBearer())],
     status_code=status.HTTP_201_CREATED,
-    tags=["courses"],
+    response_model=CourseSchema,
+    tags=["Courses"],
 )
 async def add_course(course: CourseSchema):
     """Add a new course"""
@@ -165,9 +163,10 @@ async def fetch_students():
 @app.post(
     "/api/v1/students/signup",
     status_code=status.HTTP_201_CREATED,
+    response_model=StudentSchema,
     tags=["students"],
 )
-async def signup_student(student: StudentSchema = Body(...)):
+async def signup_student(student: StudentSchema):
     """Add a new user"""
     db_student = (
         db.query(Student).filter(Student.email == student.email).first()

@@ -19,7 +19,7 @@ class CourseSchema(BaseModel):
 
 
 class StudentSchema(BaseModel):
-    user_id: int = Field(default=None)
+    student_id: int = Field(default=None)
     fullname: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)
