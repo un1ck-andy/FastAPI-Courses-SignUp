@@ -14,7 +14,43 @@ from app.schemas import StudentLoginSchema
 from app.schemas import StudentSchema
 
 
-app = FastAPI()
+description = """
+Course API helps you do awesome stuff (someday, maybe). \n
+It uses PostgreSQL and SQLAlchemy + Alembic under the hood \n
+with JWT for authentication.
+
+## Courses
+
+You can search, add, modify and delete courses.
+
+## Students
+
+You can search, add, modify and delete student's accounts.
+
+"""
+
+
+tags_metadata = [
+    {"name": "Test", "description": "Endpoints for testing"},
+    {"name": "Courses", "description": "Endpoints to work with courses"},
+    {"name": "Students", "description": "Endpoints to work with students"},
+]
+
+app = FastAPI(
+    openapi_tags=tags_metadata,
+    title="Course subscription on FastAPI",
+    description=description,
+    version="0.0.1",
+    terms_of_service="http://example.com/terms/",
+    contact={
+        "name": "Andy",
+        "email": "andy@example.com",
+    },
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+)
 
 
 def check_student(data: StudentLoginSchema):
@@ -29,8 +65,7 @@ def check_student(data: StudentLoginSchema):
 
 
 # route handlers
-
-# Get courses
+# Courses
 @app.get(
     "/api/v1/courses",
     response_model=list[CourseSchema],
@@ -65,7 +100,8 @@ async def get_single_course(id: int):
     "/api/v1/courses",
     dependencies=[Depends(JWTBearer())],
     status_code=status.HTTP_201_CREATED,
-    tags=["courses"],
+    response_model=CourseSchema,
+    tags=["Courses"],
 )
 async def add_course(course: CourseSchema):
     """Add a new course"""
@@ -90,7 +126,7 @@ async def add_course(course: CourseSchema):
     "/api/v1/students",
     response_model=list[StudentSchema],
     status_code=status.HTTP_200_OK,
-    tags=["test"],
+    tags=["Test"],
 )
 async def fetch_students():
     """Show all students list"""
@@ -101,7 +137,7 @@ async def fetch_students():
 @app.post(
     "/api/v1/students/signup",
     status_code=status.HTTP_201_CREATED,
-    tags=["students"],
+    tags=["Students"],
 )
 async def signup_student(student: StudentSchema = Body(...)):
     """Add a new user"""
@@ -128,7 +164,7 @@ async def signup_student(student: StudentSchema = Body(...)):
 @app.post(
     "/api/v1/students/login",
     status_code=status.HTTP_200_OK,
-    tags=["students"],
+    tags=["Students"],
 )
 async def student_login(student: StudentLoginSchema = Body(default=None)):
     """Login user"""
@@ -138,6 +174,6 @@ async def student_login(student: StudentLoginSchema = Body(default=None)):
         raise HTTPException(status_code=401, detail="Invalid login details!")
 
 
-@app.post("/courses/signup", tags=["courses"])
+@app.post("/courses/signup", tags=["Courses"])
 def signup_to_course():
     pass
