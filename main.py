@@ -232,7 +232,7 @@ def signup_to_course():
     status_code=status.HTTP_200_OK,
     tags=["Students"],
 )
-async def delete_user(user_id: int):
+async def delete_student_account(student_id: int):
     pass
 
 
@@ -243,7 +243,9 @@ async def delete_user(user_id: int):
     status_code=status.HTTP_200_OK,
     tags=["Students"],
 )
-async def update_user(student_update: StudentUpdateSchema, user_id: int):
+async def update_student_info(
+    student_update: StudentUpdateSchema, student_id: int
+):
     pass
 
 

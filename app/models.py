@@ -12,7 +12,7 @@ base = declarative_base()
 
 class Student(base):
     __tablename__ = "students"
-    user_id = Column(
+    student_id = Column(
         Integer,
         primary_key=True,
         nullable=False,
@@ -46,7 +46,7 @@ class CourseSignUp(base):
         unique=True,
         autoincrement=True,
     )
-    student_id = Column(Integer, ForeignKey("students.user_id"))
+    student_id = Column(Integer, ForeignKey("students.student_id"))
     course_id = Column(Integer, ForeignKey("courses.course_id"))
     student = relationship(
         "Student", backref="signup_student", lazy="subquery"
