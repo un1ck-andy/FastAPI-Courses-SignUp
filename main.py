@@ -3,73 +3,16 @@ from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import status
-from sqlalchemy import Column
-from sqlalchemy import create_engine
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import sessionmaker
 
 from app.auth.auth_bearer import JWTBearer
 from app.auth.auth_handler import signJWT
-from app.model import CourseSchema
-from app.model import StudentLoginSchema
-from app.model import StudentSchema
+from app.db import db
+from app.models import Course
+from app.models import Student
+from app.schemas import CourseSchema
+from app.schemas import StudentLoginSchema
+from app.schemas import StudentSchema
 
-base = declarative_base()
-
-
-class Student(base):
-    __tablename__ = "students"
-    user_id = Column(
-        Integer,
-        primary_key=True,
-        nullable=False,
-        unique=True,
-        autoincrement=True,
-    )
-    fullname = Column(String)
-    email = Column(String)
-    password = Column(String)
-
-
-class Course(base):
-    __tablename__ = "courses"
-    course_id = Column(
-        Integer,
-        primary_key=True,
-        nullable=False,
-        unique=True,
-        autoincrement=True,
-    )
-    title = Column(String)
-    description = Column(String)
-
-
-class CourseSignUp(base):
-    __tablename__ = "course_sign_up"
-    course_sing_up_id = Column(
-        Integer,
-        primary_key=True,
-        nullable=False,
-        unique=True,
-        autoincrement=True,
-    )
-    student_id = Column(Integer, ForeignKey("students.user_id"))
-    course_id = Column(Integer, ForeignKey("courses.course_id"))
-    student = relationship(
-        "Student", backref="signup_student", lazy="subquery"
-    )
-    course = relationship("Course", backref="signup_course", lazy="subquery")
-
-
-engine = create_engine("sqlite:///fastapi.db", echo=True)
-SessionLocal = sessionmaker(bind=engine)
-db = SessionLocal()
-
-base.metadata.create_all(engine)
 
 app = FastAPI()
 
@@ -195,9 +138,6 @@ async def student_login(student: StudentLoginSchema = Body(default=None)):
         raise HTTPException(status_code=401, detail="Invalid login details!")
 
 
-# @app.post("/courses/signup", tags=["courses"])
-# def signup_to_course(list: ApplicationsListChema):
-#     for course in courses:
-#         if course["id"] == list.course_id:
-#             course["student_id"] += "," + str(list.student_id)
-#             return {"data": f"{list.student_id} was signed to the course {course['title']}"}
+@app.post("/courses/signup", tags=["courses"])
+def signup_to_course():
+    pass
