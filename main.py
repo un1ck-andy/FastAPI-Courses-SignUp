@@ -1,81 +1,62 @@
+from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import status
 from fastapi.security import HTTPBearer
-from sqlalchemy import Column
-from sqlalchemy import create_engine
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import sessionmaker
 
+from app.auth.auth_bearer import JWTBearer
 from app.auth.auth_handler import signJWT
+from app.db import db
 from app.jwt_auth import Auth
-from app.model import AuthModel
-from app.model import CourseSchema
-from app.model import StudentLoginSchema
-from app.model import StudentSchema
+from app.models import Course
+from app.models import Student
+from app.schemas import CourseSchema
+from app.schemas import CourseUpdateSchema
+from app.schemas import StudentLoginSchema
+from app.schemas import StudentSchema
+from app.schemas import StudentUpdateSchema
 
-
-base = declarative_base()
 
 security = HTTPBearer()
 auth_handler = Auth()
 
+description = """
+Course API helps you do awesome stuff (someday, maybe). \n
+It uses PostgreSQL and SQLAlchemy + Alembic under the hood \n
+with JWT for authentication.
 
-class Student(base):
-    __tablename__ = "students"
-    student_id = Column(
-        Integer,
-        primary_key=True,
-        nullable=False,
-        unique=True,
-        autoincrement=True,
-    )
-    fullname = Column(String)
-    email = Column(String)
-    password = Column(String)
+## Courses
 
+You can search, add, modify and delete courses.
 
-class Course(base):
-    __tablename__ = "courses"
-    course_id = Column(
-        Integer,
-        primary_key=True,
-        nullable=False,
-        unique=True,
-        autoincrement=True,
-    )
-    title = Column(String)
-    description = Column(String)
+## Students
+
+You can search, add, modify and delete student's accounts.
+
+"""
 
 
-class CourseSignUp(base):
-    __tablename__ = "course_sign_up"
-    course_sing_up_id = Column(
-        Integer,
-        primary_key=True,
-        nullable=False,
-        unique=True,
-        autoincrement=True,
-    )
-    student_id = Column(Integer, ForeignKey("students.student_id"))
-    course_id = Column(Integer, ForeignKey("courses.course_id"))
-    student = relationship(
-        "Student", backref="signup_student", lazy="subquery"
-    )
-    course = relationship("Course", backref="signup_course", lazy="subquery")
+tags_metadata = [
+    {"name": "Test", "description": "Endpoints for testing"},
+    {"name": "Courses", "description": "Endpoints to work with courses"},
+    {"name": "Students", "description": "Endpoints to work with students"},
+]
 
-
-engine = create_engine("sqlite:///fastapi.db", echo=True)
-SessionLocal = sessionmaker(bind=engine)
-db = SessionLocal()
-
-base.metadata.create_all(engine)
-
-app = FastAPI()
+app = FastAPI(
+    openapi_tags=tags_metadata,
+    title="Course subscription on FastAPI",
+    description=description,
+    version="0.0.1",
+    terms_of_service="http://example.com/terms/",
+    contact={
+        "name": "Andy",
+        "email": "andy@example.com",
+    },
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+)
 
 
 def check_student(data: StudentLoginSchema):
@@ -90,8 +71,7 @@ def check_student(data: StudentLoginSchema):
 
 
 # route handlers
-
-# Get courses
+# Courses
 @app.get(
     "/api/v1/courses",
     response_model=list[CourseSchema],
@@ -100,7 +80,6 @@ def check_student(data: StudentLoginSchema):
 )
 async def get_all_courses():
     """A list of all courses"""
-
     courses = db.query(Course).all()
     return courses
 
@@ -124,7 +103,7 @@ async def get_single_course(id: int):
 
 @app.post(
     "/api/v1/courses",
-    # dependencies=[Depends(JWTBearer())],
+    dependencies=[Depends(JWTBearer())],
     status_code=status.HTTP_201_CREATED,
     response_model=CourseSchema,
     tags=["Courses"],
@@ -148,11 +127,56 @@ async def add_course(course: CourseSchema):
     return new_course
 
 
+@app.put(
+    "/api/v1/courses/{course_id}",
+    dependencies=[Depends(JWTBearer())],
+    response_model=CourseUpdateSchema,
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["Courses"],
+)
+async def update_the_course(course_id: int, course: CourseUpdateSchema):
+    """Update the course by ID"""
+
+    updated_course = (
+        db.query(Course).filter(Course.course_id == course_id).first()
+    )
+    if updated_course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
+    updated_course.title = course.title
+    updated_course.description = course.description
+    db.commit()
+
+    return updated_course
+
+
+@app.delete(
+    "/api/v1/courses/{course_id}",
+    response_model=CourseUpdateSchema,
+    dependencies=[Depends(JWTBearer())],
+    status_code=200,
+    tags=["Courses"],
+)
+async def delete_the_course(course_id: int):
+    course_to_delete = (
+        db.query(Course).filter(Course.course_id == course_id).first()
+    )
+    if course_to_delete is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
+    db.delete(course_to_delete)
+    db.commit()
+    return course_to_delete
+
+
 @app.get(
     "/api/v1/students",
     response_model=list[StudentSchema],
     status_code=status.HTTP_200_OK,
-    tags=["test"],
+    dependencies=[Depends(JWTBearer())],
+    tags=["Students"],
 )
 async def fetch_students():
     """Show all students list"""
@@ -192,9 +216,9 @@ async def signup_student(student: StudentSchema):
 @app.post(
     "/api/v1/students/login",
     status_code=status.HTTP_200_OK,
-    tags=["students"],
+    tags=["Students"],
 )
-async def student_login(student: AuthModel):
+async def student_login(student: StudentSchema):
     """Login student"""
     student_db = (
         db.query(Student).filter(Student.email == student.email).first()
@@ -204,6 +228,45 @@ async def student_login(student: AuthModel):
     if not auth_handler.verify_password(student.password, student_db.password):
         raise HTTPException(status_code=401, detail="Invalid login details!")
 
-    access_token = auth_handler.encode_token(student_db.email)
-    refresh_token = auth_handler.encode_refresh_token(student_db.email)
-    return {"access_token": access_token, "refresh_token": refresh_token}
+
+@app.post("/courses/signup", tags=["Courses"])
+def signup_to_course():
+    pass
+
+
+@app.delete(
+    "/api/v1/studets/{student_id}",
+    response_model=StudentSchema,
+    dependencies=[Depends(JWTBearer())],
+    status_code=status.HTTP_200_OK,
+    tags=["Students"],
+)
+async def delete_student_account(student_id: int):
+    pass
+
+
+@app.put(
+    "/api/v1/students/{student_id}",
+    response_model=StudentSchema,
+    dependencies=[Depends(JWTBearer())],
+    status_code=status.HTTP_200_OK,
+    tags=["Students"],
+)
+async def update_student_info(
+    student_update: StudentUpdateSchema, student_id: int
+):
+    pass
+
+
+#     for user in db:
+#         if user.id == user_id:
+#             if user_update.first_name is not None:
+#                 user.first_name = user_update.first_name
+#             if user_update.last_name is not None:
+#                 user.last_name = user_update.last_name
+#             if user_update.roles is not None:
+#                 user.roles = user_update.roles
+#             return
+#     raise HTTPException(
+#         status_code=404, detail=f"user with id: {user_id} does not exist"
+#     )
