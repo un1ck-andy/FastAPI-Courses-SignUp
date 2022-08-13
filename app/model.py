@@ -52,3 +52,8 @@ class CourseSignUp(BaseModel):
     id: int = Field(default=None)
     course_id: int = Field(default=None)
     student_id: int = Field(default=None)
+
+
+class AuthModel(BaseModel):
+    email: str
+    password: str

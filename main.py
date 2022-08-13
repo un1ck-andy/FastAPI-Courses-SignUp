@@ -3,6 +3,7 @@ from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import status
+from fastapi.security import HTTPBearer
 from sqlalchemy import Column
 from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
@@ -14,11 +15,17 @@ from sqlalchemy.orm import sessionmaker
 
 from app.auth.auth_bearer import JWTBearer
 from app.auth.auth_handler import signJWT
+from app.jwt_auth import Auth
+from app.model import AuthModel
 from app.model import CourseSchema
 from app.model import StudentLoginSchema
 from app.model import StudentSchema
 
+
 base = declarative_base()
+
+security = HTTPBearer()
+auth_handler = Auth()
 
 
 class Student(base):
@@ -171,10 +178,11 @@ async def signup_student(student: StudentSchema = Body(...)):
             status_code=400, detail="User with the same email already exists"
         )
 
+    hashed_password = auth_handler.encode_password(student.password)
     new_student = Student(
         fullname=student.fullname,
         email=student.email,
-        password=student.password,
+        password=hashed_password,
     )
 
     db.add(new_student)
@@ -187,17 +195,16 @@ async def signup_student(student: StudentSchema = Body(...)):
     status_code=status.HTTP_200_OK,
     tags=["students"],
 )
-async def student_login(student: StudentLoginSchema = Body(default=None)):
-    """Login user"""
-    if check_student(student):
-        return signJWT(student.email)
-    else:
+async def student_login(student: AuthModel):
+    """Login student"""
+    student_db = (
+        db.query(Student).filter(Student.email == student.email).first()
+    )
+    if student_db is None:
+        raise HTTPException(status_code=401, detail="Invalid user details!")
+    if not auth_handler.verify_password(student.password, student_db.password):
         raise HTTPException(status_code=401, detail="Invalid login details!")
 
-
-# @app.post("/courses/signup", tags=["courses"])
-# def signup_to_course(list: ApplicationsListChema):
-#     for course in courses:
-#         if course["id"] == list.course_id:
-#             course["student_id"] += "," + str(list.student_id)
-#             return {"data": f"{list.student_id} was signed to the course {course['title']}"}
+    access_token = auth_handler.encode_token(student_db.email)
+    refresh_token = auth_handler.encode_refresh_token(student_db.email)
+    return {"access_token": access_token, "refresh_token": refresh_token}
