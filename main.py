@@ -10,8 +10,10 @@ from app.db import db
 from app.models import Course
 from app.models import Student
 from app.schemas import CourseSchema
+from app.schemas import CourseUpdateSchema
 from app.schemas import StudentLoginSchema
 from app.schemas import StudentSchema
+from app.schemas import StudentUpdateSchema
 
 
 description = """
@@ -74,7 +76,6 @@ def check_student(data: StudentLoginSchema):
 )
 async def get_all_courses():
     """A list of all courses"""
-
     courses = db.query(Course).all()
     return courses
 
@@ -122,11 +123,56 @@ async def add_course(course: CourseSchema):
     return new_course
 
 
+@app.put(
+    "/api/v1/courses/{course_id}",
+    dependencies=[Depends(JWTBearer())],
+    response_model=CourseUpdateSchema,
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["Courses"],
+)
+async def update_the_course(course_id: int, course: CourseUpdateSchema):
+    """Update the course by ID"""
+
+    updated_course = (
+        db.query(Course).filter(Course.course_id == course_id).first()
+    )
+    if updated_course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
+    updated_course.title = course.title
+    updated_course.description = course.description
+    db.commit()
+
+    return updated_course
+
+
+@app.delete(
+    "/api/v1/courses/{course_id}",
+    response_model=CourseUpdateSchema,
+    dependencies=[Depends(JWTBearer())],
+    status_code=200,
+    tags=["Courses"],
+)
+async def delete_the_course(course_id: int):
+    course_to_delete = (
+        db.query(Course).filter(Course.course_id == course_id).first()
+    )
+    if course_to_delete is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
+    db.delete(course_to_delete)
+    db.commit()
+    return course_to_delete
+
+
 @app.get(
     "/api/v1/students",
     response_model=list[StudentSchema],
     status_code=status.HTTP_200_OK,
-    tags=["Test"],
+    dependencies=[Depends(JWTBearer())],
+    tags=["Students"],
 )
 async def fetch_students():
     """Show all students list"""
@@ -177,3 +223,39 @@ async def student_login(student: StudentLoginSchema = Body(default=None)):
 @app.post("/courses/signup", tags=["Courses"])
 def signup_to_course():
     pass
+
+
+@app.delete(
+    "/api/v1/studets/{student_id}",
+    response_model=StudentSchema,
+    dependencies=[Depends(JWTBearer())],
+    status_code=status.HTTP_200_OK,
+    tags=["Students"],
+)
+async def delete_user(user_id: int):
+    pass
+
+
+@app.put(
+    "/api/v1/students/{student_id}",
+    response_model=StudentSchema,
+    dependencies=[Depends(JWTBearer())],
+    status_code=status.HTTP_200_OK,
+    tags=["Students"],
+)
+async def update_user(student_update: StudentUpdateSchema, user_id: int):
+    pass
+
+
+#     for user in db:
+#         if user.id == user_id:
+#             if user_update.first_name is not None:
+#                 user.first_name = user_update.first_name
+#             if user_update.last_name is not None:
+#                 user.last_name = user_update.last_name
+#             if user_update.roles is not None:
+#                 user.roles = user_update.roles
+#             return
+#     raise HTTPException(
+#         status_code=404, detail=f"user with id: {user_id} does not exist"
+#     )
