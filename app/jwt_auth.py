@@ -3,8 +3,11 @@ from datetime import datetime
 from datetime import timedelta
 
 import jwt
+from dotenv import load_dotenv
 from fastapi import HTTPException
 from passlib.context import CryptContext
+
+load_dotenv()
 
 
 class Auth:

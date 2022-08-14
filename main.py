@@ -1,11 +1,12 @@
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi import Security
 from fastapi import status
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
 
 from app.auth.auth_bearer import JWTBearer
-from app.auth.auth_handler import signJWT
 from app.db import db
 from app.jwt_auth import Auth
 from app.models import Course
@@ -188,7 +189,7 @@ async def fetch_students():
     "/api/v1/students/signup",
     status_code=status.HTTP_201_CREATED,
     response_model=StudentSchema,
-    tags=["students"],
+    tags=["Students"],
 )
 async def signup_student(student: StudentSchema):
     """Add a new user"""
@@ -210,7 +211,7 @@ async def signup_student(student: StudentSchema):
 
     db.add(new_student)
     db.commit()
-    return signJWT(student.email)
+    return new_student
 
 
 @app.post(
@@ -218,7 +219,7 @@ async def signup_student(student: StudentSchema):
     status_code=status.HTTP_200_OK,
     tags=["Students"],
 )
-async def student_login(student: StudentSchema):
+async def student_login(student: StudentLoginSchema):
     """Login student"""
     student_db = (
         db.query(Student).filter(Student.email == student.email).first()
@@ -227,6 +228,10 @@ async def student_login(student: StudentSchema):
         raise HTTPException(status_code=401, detail="Invalid user details!")
     if not auth_handler.verify_password(student.password, student_db.password):
         raise HTTPException(status_code=401, detail="Invalid login details!")
+    access_token = auth_handler.encode_token(student.email)
+    refresh_token = auth_handler.encode_refresh_token(student.email)
+
+    return {"access_token": access_token, "refresh_token": refresh_token}
 
 
 @app.post("/courses/signup", tags=["Courses"])
@@ -237,12 +242,16 @@ def signup_to_course():
 @app.delete(
     "/api/v1/studets/{student_id}",
     response_model=StudentSchema,
-    dependencies=[Depends(JWTBearer())],
     status_code=status.HTTP_200_OK,
     tags=["Students"],
 )
-async def delete_student_account(student_id: int):
-    pass
+async def delete_student_account(
+    student_id: int,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+):
+    token = credentials.credentials
+    if auth_handler.decode_token(token):
+        pass
 
 
 @app.put(
