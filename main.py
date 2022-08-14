@@ -37,7 +37,6 @@ You can search, add, modify and delete student's accounts.
 
 
 tags_metadata = [
-    {"name": "Test", "description": "Endpoints for testing"},
     {"name": "Courses", "description": "Endpoints to work with courses"},
     {"name": "Students", "description": "Endpoints to work with students"},
 ]
@@ -57,17 +56,6 @@ app = FastAPI(
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
 )
-
-
-def check_student(data: StudentLoginSchema):
-    check_result = (
-        db.query(Student)
-        .filter(Student.email == data.email, Student.password == data.password)
-        .first()
-    )
-    if check_result:
-        return True
-    return False
 
 
 # route handlers
@@ -246,7 +234,7 @@ async def student_login(student: StudentLoginSchema):
         db.query(Student).filter(Student.email == student.email).first()
     )
     if student_db is None:
-        raise HTTPException(status_code=401, detail="Invalid user details!")
+        raise HTTPException(status_code=401, detail="Invalid login details!")
     if not auth_handler.verify_password(student.password, student_db.password):
         raise HTTPException(status_code=401, detail="Invalid login details!")
     access_token = auth_handler.encode_token(student.email)
@@ -286,4 +274,4 @@ def signup_to_course():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app="main:app", host="0.0.0.0", port=8000, reload=True)
