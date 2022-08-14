@@ -1,3 +1,4 @@
+alembic==1.8.1
 anyio==3.6.1
 autopep8==1.7.0
 bcrypt==3.2.2
@@ -8,12 +9,15 @@ email-validator==1.2.1
 fastapi==0.79.0
 h11==0.13.0
 idna==3.3
+Mako==1.2.1
+MarkupSafe==2.1.1
 passlib==1.7.4
 pycodestyle==2.9.1
 pycparser==2.21
 pydantic==1.9.1
 PyJWT==2.4.0
 python-decouple==3.6
+python-dotenv==0.20.0
 sniffio==1.2.0
 SQLAlchemy==1.4.40
 starlette==0.19.1

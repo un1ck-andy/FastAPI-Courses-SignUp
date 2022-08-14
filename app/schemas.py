@@ -77,7 +77,15 @@ class StudentLoginSchema(BaseModel):
         }
 
 
-class CourseSignUp(BaseModel):
-    id: int = Field(default=None)
+class CourseSignUpSchema(BaseModel):
     course_id: int = Field(default=None)
     student_id: int = Field(default=None)
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+                "course_id": "1",
+                "student_id": "2",
+            }
+        }

@@ -1,0 +1,22 @@
+version: '0.1'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: api
+    hostname: api
+    ports:
+      - '8000:8000'
+    networks:
+      - backend
+    tty: true
+    depends_on:
+      - db
+    volumes:
+      - $PWD:/home
+  
+networks:
+  backend:
+    driver: 'bridge'

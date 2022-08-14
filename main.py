@@ -9,8 +9,10 @@ from fastapi.security import HTTPBearer
 from app.db import db
 from app.jwt_auth import Auth
 from app.models import Course
+from app.models import CourseSignUp
 from app.models import Student
 from app.schemas import CourseSchema
+from app.schemas import CourseSignUpSchema
 from app.schemas import CourseUpdateSchema
 from app.schemas import StudentListSchema
 from app.schemas import StudentLoginSchema
@@ -188,7 +190,7 @@ async def delete_the_course(
     status_code=status.HTTP_200_OK,
     tags=["Students"],
 )
-async def fetch_students():
+async def get_all_students():
     """Show all students list"""
     students = db.query(Student).all()
     return students
@@ -268,9 +270,56 @@ async def delete_student_account(
         return account_to_delete
 
 
-@app.post("/courses/signup", tags=["Courses"])
-def signup_to_course():
-    pass
+@app.post(
+    "/api/v1/courses/signup",
+    response_model=CourseSignUpSchema,
+    tags=["Courses"],
+)
+def signup_to_the_course(
+    payload: CourseSignUpSchema,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+):
+    token = credentials.credentials
+    if auth_handler.decode_token(token):
+        new_signup = CourseSignUp(
+            student_id=payload.student_id, course_id=payload.course_id
+        )
+        check_student_id = (
+            db.query(Student)
+            .filter(Student.student_id == payload.student_id)
+            .first()
+        )
+        if check_student_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student not found",
+            )
+        check_course_id = (
+            db.query(Course)
+            .filter(Course.course_id == payload.course_id)
+            .first()
+        )
+        if check_course_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Course not found",
+            )
+        db_check_double = (
+            db.query(CourseSignUp)
+            .filter(
+                CourseSignUp.student_id == payload.student_id,
+                CourseSignUp.course_id == payload.course_id,
+            )
+            .first()
+        )
+        if db_check_double is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="You already have been signed up for the course",
+            )
+        db.add(new_signup)
+        db.commit()
+        return new_signup
 
 
 if __name__ == "__main__":
