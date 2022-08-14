@@ -51,8 +51,21 @@ class StudentSchema(BaseModel):
         }
 
 
+class StudentListSchema(BaseModel):
+    student_id: int = Field(default=None)
+    fullname: str = Field(...)
+
+    class Config:
+        orm_mode = True
+        schema_extra = {
+            "example": {
+                "fullname": "Thomas Anderson",
+            }
+        }
+
+
 class StudentUpdateSchema(BaseModel):
-    user_id: int = Field(default=None)
+    student_id: int = Field(default=None)
     fullname: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)

@@ -13,6 +13,7 @@ from app.models import Course
 from app.models import Student
 from app.schemas import CourseSchema
 from app.schemas import CourseUpdateSchema
+from app.schemas import StudentListSchema
 from app.schemas import StudentLoginSchema
 from app.schemas import StudentSchema
 from app.schemas import StudentUpdateSchema
@@ -104,15 +105,22 @@ async def get_single_course(id: int):
 
 @app.post(
     "/api/v1/courses",
-    dependencies=[Depends(JWTBearer())],
     status_code=status.HTTP_201_CREATED,
     response_model=CourseSchema,
     tags=["Courses"],
 )
-async def add_course(course: CourseSchema):
+async def add_course(
+    course: CourseSchema,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+):
     """Add a new course"""
+    token = credentials.credentials
+    if not auth_handler.decode_token(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You must authorize to add the course",
+        )
     db_course = db.query(Course).filter(Course.title == course.title).first()
-
     if db_course is not None:
         raise HTTPException(
             status_code=400, detail="Course with the same title already exists"
@@ -163,11 +171,19 @@ async def update_the_course(
 @app.delete(
     "/api/v1/courses/{course_id}",
     response_model=CourseUpdateSchema,
-    dependencies=[Depends(JWTBearer())],
     status_code=200,
     tags=["Courses"],
 )
-async def delete_the_course(course_id: int):
+async def delete_the_course(
+    course_id: int,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+):
+    token = credentials.credentials
+    if not auth_handler.decode_token(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You must authorize to delete the course",
+        )
     course_to_delete = (
         db.query(Course).filter(Course.course_id == course_id).first()
     )
@@ -182,9 +198,8 @@ async def delete_the_course(course_id: int):
 
 @app.get(
     "/api/v1/students",
-    response_model=list[StudentSchema],
+    response_model=list[StudentListSchema],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(JWTBearer())],
     tags=["Students"],
 )
 async def fetch_students():
@@ -259,7 +274,17 @@ async def delete_student_account(
 ):
     token = credentials.credentials
     if auth_handler.decode_token(token):
-        pass
+        account_to_delete = (
+            db.query(Student).filter(Student.student_id == student_id).first()
+        )
+        if account_to_delete is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student account not found",
+            )
+        db.delete(account_to_delete)
+        db.commit()
+        return account_to_delete
 
 
 @app.put(
