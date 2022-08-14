@@ -130,14 +130,22 @@ async def add_course(course: CourseSchema):
 
 @app.put(
     "/api/v1/courses/{course_id}",
-    dependencies=[Depends(JWTBearer())],
     response_model=CourseUpdateSchema,
     status_code=status.HTTP_202_ACCEPTED,
     tags=["Courses"],
 )
-async def update_the_course(course_id: int, course: CourseUpdateSchema):
+async def update_the_course(
+    course_id: int,
+    course: CourseUpdateSchema,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+):
     """Update the course by ID"""
-
+    token = credentials.credentials
+    if not auth_handler.decode_token(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You must authorize to change the course",
+        )
     updated_course = (
         db.query(Course).filter(Course.course_id == course_id).first()
     )
