@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Security
 from fastapi import status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
 
@@ -320,6 +322,14 @@ def signup_to_the_course(
         db.add(new_signup)
         db.commit()
         return new_signup
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content="Wrong arguments, please check the example schema",
+    )
 
 
 if __name__ == "__main__":
