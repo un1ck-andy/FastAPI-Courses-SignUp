@@ -1,4 +1,4 @@
-from fastapi import Depends
+import uvicorn
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Security
@@ -6,7 +6,6 @@ from fastapi import status
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
 
-from app.auth.auth_bearer import JWTBearer
 from app.db import db
 from app.jwt_auth import Auth
 from app.models import Course
@@ -16,7 +15,6 @@ from app.schemas import CourseUpdateSchema
 from app.schemas import StudentListSchema
 from app.schemas import StudentLoginSchema
 from app.schemas import StudentSchema
-from app.schemas import StudentUpdateSchema
 
 
 security = HTTPBearer()
@@ -257,11 +255,6 @@ async def student_login(student: StudentLoginSchema):
     return {"access_token": access_token, "refresh_token": refresh_token}
 
 
-@app.post("/courses/signup", tags=["Courses"])
-def signup_to_course():
-    pass
-
-
 @app.delete(
     "/api/v1/studets/{student_id}",
     response_model=StudentSchema,
@@ -287,28 +280,10 @@ async def delete_student_account(
         return account_to_delete
 
 
-@app.put(
-    "/api/v1/students/{student_id}",
-    response_model=StudentSchema,
-    dependencies=[Depends(JWTBearer())],
-    status_code=status.HTTP_200_OK,
-    tags=["Students"],
-)
-async def update_student_info(
-    student_update: StudentUpdateSchema, student_id: int
-):
+@app.post("/courses/signup", tags=["Courses"])
+def signup_to_course():
     pass
 
 
-#     for user in db:
-#         if user.id == user_id:
-#             if user_update.first_name is not None:
-#                 user.first_name = user_update.first_name
-#             if user_update.last_name is not None:
-#                 user.last_name = user_update.last_name
-#             if user_update.roles is not None:
-#                 user.roles = user_update.roles
-#             return
-#     raise HTTPException(
-#         status_code=404, detail=f"user with id: {user_id} does not exist"
-#     )
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

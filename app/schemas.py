@@ -64,23 +64,6 @@ class StudentListSchema(BaseModel):
         }
 
 
-class StudentUpdateSchema(BaseModel):
-    student_id: int = Field(default=None)
-    fullname: str = Field(...)
-    email: EmailStr = Field(...)
-    password: str = Field(...)
-
-    class Config:
-        orm_mode = True
-        schema_extra = {
-            "example": {
-                "fullname": "Thomas Anderson",
-                "email": "neo@matrix.has.you",
-                "password": "weakpassword",
-            }
-        }
-
-
 class StudentLoginSchema(BaseModel):
     email: EmailStr = Field(default=None)
     password: str = Field(default=None)
@@ -98,8 +81,3 @@ class CourseSignUp(BaseModel):
     id: int = Field(default=None)
     course_id: int = Field(default=None)
     student_id: int = Field(default=None)
-
-
-class AuthModel(BaseModel):
-    email: str
-    password: str
