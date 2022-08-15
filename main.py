@@ -35,7 +35,11 @@ You can search, add, modify and delete courses.
 
 ## Students
 
-You can search, add, modify and delete student's accounts.
+You can search, add and delete student's accounts.
+
+## Course Signup
+
+You can signup the student the course.
 
 """
 
@@ -49,7 +53,7 @@ app = FastAPI(
     openapi_tags=tags_metadata,
     title="Course subscription on FastAPI",
     description=description,
-    version="0.0.1",
+    version="0.1.0",
     terms_of_service="http://example.com/terms/",
     contact={
         "name": "Andy",

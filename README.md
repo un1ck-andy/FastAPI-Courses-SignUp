@@ -11,3 +11,7 @@ You can search, add, modify and delete courses.
 ## Students
 
 You can search, add, modify and delete student's accounts.
+
+## Course Signup
+
+You can signup the student the course.
