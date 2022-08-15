@@ -1,4 +1,4 @@
-version: '0.1'
+version: '2'
 
 services:
   api:
@@ -16,6 +16,20 @@ services:
       - db
     volumes:
       - $PWD:/home
+    expose:
+      - "8000"
+  db:
+    image: postgres:11
+    container_name: db
+    hostname: db
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fastapi_test
   
 networks:
   backend:
