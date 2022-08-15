@@ -27,7 +27,7 @@ auth_handler = Auth()
 description = """
 Course API helps you do awesome stuff (someday, maybe). \n
 It uses PostgreSQL and SQLAlchemy + Alembic under the hood \n
-with JWT for authentication.
+with JWT for authentication. Passwords are stored encrypted.
 
 ## Courses
 
@@ -71,7 +71,7 @@ app = FastAPI(
     tags=["Courses"],
 )
 async def get_all_courses():
-    """A list of all courses"""
+    """Get a list of all courses"""
     courses = db.query(Course).all()
     return courses
 
@@ -83,7 +83,7 @@ async def get_all_courses():
     tags=["Courses"],
 )
 async def get_single_course(id: int):
-    """Find a course by ID"""
+    """Find the course by ID"""
     course = db.query(Course).filter(Course.course_id == id).first()
 
     if course is None:
@@ -168,6 +168,7 @@ async def delete_the_course(
     course_id: int,
     credentials: HTTPAuthorizationCredentials = Security(security),
 ):
+    """Delete the course by ID"""
     token = credentials.credentials
     if not auth_handler.decode_token(token):
         raise HTTPException(
@@ -193,7 +194,7 @@ async def delete_the_course(
     tags=["Students"],
 )
 async def get_all_students():
-    """Show all students list"""
+    """Show a list of all students"""
     students = db.query(Student).all()
     return students
 
@@ -205,7 +206,7 @@ async def get_all_students():
     tags=["Students"],
 )
 async def signup_student(student: StudentSchema):
-    """Add a new user"""
+    """Create a new student's account"""
     db_student = (
         db.query(Student).filter(Student.email == student.email).first()
     )
@@ -233,7 +234,7 @@ async def signup_student(student: StudentSchema):
     tags=["Students"],
 )
 async def student_login(student: StudentLoginSchema):
-    """Login student"""
+    """Login student into the account"""
     student_db = (
         db.query(Student).filter(Student.email == student.email).first()
     )
@@ -257,6 +258,7 @@ async def delete_student_account(
     student_id: int,
     credentials: HTTPAuthorizationCredentials = Security(security),
 ):
+    """Delete student's account"""
     token = credentials.credentials
     if auth_handler.decode_token(token):
         account_to_delete = (
@@ -281,6 +283,7 @@ def signup_to_the_course(
     payload: CourseSignUpSchema,
     credentials: HTTPAuthorizationCredentials = Security(security),
 ):
+    """Signup to the course"""
     token = credentials.credentials
     if auth_handler.decode_token(token):
         new_signup = CourseSignUp(
